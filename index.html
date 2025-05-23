@@ -1,14 +1,179 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="fr">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Calendi - Système professionnel de gestion de rendez-vous avec notifications SMS" />
-    <title>Calendi | Gestion de Rendez-vous</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CalendCias - Gestion de Rendez-vous</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- Auth Pages -->
+        <div id="auth-container" class="hidden">
+            <div class="auth-box">
+                <div class="logo-container">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="calendar-icon"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                </div>
+                <h1 id="auth-title">Connexion à CalendCias</h1>
+                <p id="auth-switch-text">
+                    Ou <a href="#" id="auth-switch-link">créez un compte</a>
+                </p>
+                
+                <form id="auth-form" class="form">
+                    <div class="form-group">
+                        <label for="email">Adresse email</label>
+                        <input type="email" id="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Mot de passe</label>
+                        <input type="password" id="password" required>
+                    </div>
+                    <div id="confirm-password-group" class="form-group hidden">
+                        <label for="confirm-password">Confirmer le mot de passe</label>
+                        <input type="password" id="confirm-password">
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="auth-submit">Se connecter</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Main App -->
+        <div id="main-container" class="hidden">
+            <!-- Header -->
+            <header class="header">
+                <div class="header-content">
+                    <div class="logo">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="calendar-icon"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                        <span>CalendCias</span>
+                    </div>
+                    <nav class="nav-menu">
+                        <a href="#" class="nav-link" data-page="dashboard">Tableau de bord</a>
+                        <a href="#" class="nav-link" data-page="add-appointment">Nouveau rendez-vous</a>
+                    </nav>
+                    <div class="user-menu">
+                        <span id="user-email"></span>
+                        <button id="logout-btn" class="btn btn-text">Déconnexion</button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Content -->
+            <main class="main-content">
+                <!-- Dashboard -->
+                <div id="dashboard-page" class="page">
+                    <div class="page-header">
+                        <h1>Mes Rendez-vous</h1>
+                        <div class="actions">
+                            <button class="btn btn-primary" id="new-appointment-btn">
+                                <span class="icon">+</span> Nouveau rendez-vous
+                            </button>
+                            <button class="btn btn-secondary" id="refresh-btn">
+                                <span class="icon">↻</span> Actualiser
+                            </button>
+                        </div>
+                    </div>
+                    <div id="appointments-container" class="card">
+                        <table id="appointments-table" class="table">
+                            <thead>
+                                <tr>
+                                    <th>Client</th>
+                                    <th>Téléphone</th>
+                                    <th>Service</th>
+                                    <th>Date & Heure</th>
+                                    <th>Statut</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="appointments-list"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Add/Edit Appointment -->
+                <div id="appointment-form-page" class="page hidden">
+                    <div class="page-header">
+                        <button class="btn btn-icon" id="back-btn">←</button>
+                        <h1 id="appointment-form-title">Nouveau Rendez-vous</h1>
+                    </div>
+                    <div class="card">
+                        <form id="appointment-form" class="form">
+                            <div class="form-group">
+                                <label>Type de client</label>
+                                <div class="radio-group">
+                                    <label>
+                                        <input type="radio" name="client-type" value="new" checked>
+                                        Nouveau client
+                                    </label>
+                                    <label>
+                                        <input type="radio" name="client-type" value="existing">
+                                        Client existant
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div id="existing-client-group" class="form-group hidden">
+                                <label for="client-select">Sélectionner un client</label>
+                                <select id="client-select"></select>
+                            </div>
+
+                            <div id="new-client-group">
+                                <div class="form-group">
+                                    <label for="client-name">Nom du client</label>
+                                    <input type="text" id="client-name" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="client-phone">Téléphone</label>
+                                    <input type="tel" id="client-phone" required pattern="^(?:(?:\+|00)33|0)\s*[1-9](?:[\s.-]*\d{2}){4}$">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="service">Service</label>
+                                <select id="service" required>
+                                    <option value="">Sélectionner un service</option>
+                                    <option value="Consultation">Consultation</option>
+                                    <option value="Suivi">Suivi</option>
+                                    <option value="Traitement">Traitement</option>
+                                    <option value="Urgence">Urgence</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="date">Date</label>
+                                <input type="date" id="date" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="time">Heure</label>
+                                <input type="time" id="time" required>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="button" class="btn btn-secondary" id="cancel-appointment">Annuler</button>
+                                <button type="submit" class="btn btn-primary" id="save-appointment">Enregistrer</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </main>
+
+            <!-- Footer -->
+            <footer class="footer">
+                <div class="footer-content">
+                    <p>&copy; 2025 CalendCias - Tous droits réservés</p>
+                </div>
+            </footer>
+        </div>
+
+        <!-- Toast Notifications -->
+        <div id="toast-container"></div>
+    </div>
+
+    <script src="/js/config.js"></script>
+    <script src="/js/supabase.js"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/appointments.js"></script>
+    <script src="/js/app.js"></script>
+</body>
 </html>
